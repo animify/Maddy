@@ -1,0 +1,23 @@
+{
+  "name": "reel",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "repository": "https://github.com/animify/Reel.git",
+  "author": "Stefan Mansson <stefan.aotik@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "nodemon",
+    "expose": "ngrok http 3003"
+  },
+  "dependencies": {
+    "ngrok": "^3.2.1",
+    "nodemon": "^1.19.1",
+    "restify": "^8.3.3",
+    "restify-cors-middleware": "^1.1.1"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "test/*"
+    ]
+  }
+}
