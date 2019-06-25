@@ -21,7 +21,7 @@ server.use(
     })
 );
 
-server.get('/', function(req, res, next) {
+server.get('/hooks', function(req, res, next) {
     res.send('Reel');
     next();
 });
@@ -35,7 +35,7 @@ async function sendPost(payload) {
     });
 }
 
-server.post('/hook', function(req, res, next) {
+server.post('/hooks/v1', function(req, res, next) {
     res.setHeader('content-type', 'application/json');
 
     console.log('sending post request');

@@ -1,11 +1,22 @@
 {
     "version": 2, 
     "public": true,
+    "name": "Reel",
     "builds": [
-      {
-        "src": "server/index.js",
-        "use": "@now/node-server"
-      }
+        {
+            "src": "server/index.js",
+            "use": "@now/node-server"
+        },
+        {
+            "src": "next.config.js",
+            "use": "@now/next"
+        }
     ],
-    "routes": [{ "src": "/(.*)", "dest": "/server/index.js" }]
+    "routes": [
+        {
+            "src": "/hooks/(.*)",
+            "dest": "/server/index.js",
+            "methods": ["GET", "POST"]
+        }
+    ]
   }

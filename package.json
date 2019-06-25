@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "concurrently \"nodemon\" \"next\"",
-    "live": "nex start",
+    "live": "concurrently \"nodemon\" \"next start\"",
     "build": "next build",
     "expose": "ngrok http 3003"
   },
