@@ -12,6 +12,8 @@
     "expose": "ngrok http 3003"
   },
   "dependencies": {
+    "cuid": "^2.1.6",
+    "mongoose": "^5.6.1",
     "next": "^8.1.0",
     "ngrok": "^3.2.1",
     "node-fetch": "^2.6.0",

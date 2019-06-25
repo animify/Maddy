@@ -1,6 +1,6 @@
 export default () => (
     <div>
-        <a href="https://slack.com/oauth/authorize?scope=incoming-webhook,commands,bot&client_id=662900450978.673844679700">
+        <a href="https://slack.com/oauth/authorize?scope=incoming-webhook,commands,bot&client_id=662900450978.673844679700&redirect_uri=https://reel.animify.now.sh/hooks/callback">
             <img
                 alt="Add to Slack"
                 height="40"

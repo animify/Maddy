@@ -1,6 +1,11 @@
+const cuid = require('cuid');
+const mongoose = require('mongoose');
+const { URLSearchParams } = require('url');
 const restify = require('restify');
 const corsMiddleware = require('restify-cors-middleware');
 const fetch = require('node-fetch');
+const db = require('./db');
+const Relation = require('./models/Relation');
 
 const server = restify.createServer({
     name: 'Reel',
@@ -10,6 +15,34 @@ const server = restify.createServer({
 const cors = corsMiddleware({
     origins: ['*'],
 });
+
+async function sendPost(payload, url) {
+    console.log('sending post', payload);
+    return await fetch(url, {
+        method: 'POST',
+        body: payload,
+        headers: { 'Content-type': 'application/json' },
+    });
+}
+
+async function sendCallback(code) {
+    const params = new URLSearchParams();
+
+    params.append('client_id', '662900450978.673844679700');
+    params.append('client_secret', '767c913096222754b705ef7d84b019ea');
+    params.append('code', code);
+    params.append('redirect_uri', 'https://reel.animify.now.sh/hooks/callback');
+
+    console.log('sending callback', params);
+
+    const res = await fetch('https://slack.com/api/oauth.access', {
+        method: 'POST',
+        body: params,
+        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+    });
+
+    return res.json();
+}
 
 server.pre(cors.preflight);
 server.use(cors.actual);
@@ -26,24 +59,49 @@ server.get('/hooks', function(req, res, next) {
     next();
 });
 
-async function sendPost(payload) {
-    console.log('sending post', payload);
-    return fetch('https://hooks.slack.com/services/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', {
-        method: 'POST',
-        body: payload,
-        headers: { 'Content-type': 'application/json' },
-    });
-}
+server.get('/hooks/callback', function(req, res, next) {
+    const query = req.query;
+    console.log(query);
 
-server.post('/hooks/v1', function(req, res, next) {
+    sendCallback(query.code).then(response => {
+        const id = cuid();
+        const url = response.incoming_webhook.url;
+        console.log(id, url);
+        const relation = new Relation({ id, url });
+
+        console.log('relation', relation);
+
+        relation
+            .save()
+            .then(() => {
+                console.log('saved relation');
+                res.json({ id, url, hook: `https://reel.animify.now.sh/hooks/v1/${id}` });
+                next();
+            })
+            .catch(err => {
+                console.log('err', err);
+                res.json({ success: false });
+                next();
+            });
+    });
+});
+
+server.post('/hooks/v1/:id', async function(req, res, next) {
+    const params = req.params;
+
+    if (!params || (params && !params.id)) {
+        res.json({ success: false });
+        return next();
+    }
+
     res.setHeader('content-type', 'application/json');
 
     console.log('sending post request');
 
     if (req.body.action === 'created' && req.body.release) {
-        const releaseMessage = `New release *${req.body.release.name}* created in repository *${req.body.repository.name}* (<${
+        const releaseMessage = `:package: New release *${req.body.release.name}* created in repository *${req.body.repository.name}* (<${
             req.body.repository.html_url
-        }|@${req.body.repository.full_name}>).\nTagged *${req.body.release.tag_name}* by <${req.body.release.author.html_url}|*@${
+        }|@${req.body.repository.full_name}>).\n:label: Tagged *${req.body.release.tag_name}* by <${req.body.release.author.html_url}|*@${
             req.body.release.author.login
         }*>.`;
 
@@ -65,8 +123,9 @@ server.post('/hooks/v1', function(req, res, next) {
             ],
         });
 
-        sendPost(payload).then(() => {
-            console.log('then');
+        const found = await Relation.findOne({ id: params.id });
+
+        sendPost(payload, found.url).then(() => {
             res.json({ success: true, body: req.body });
             next();
         });
