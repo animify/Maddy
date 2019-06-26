@@ -5,6 +5,7 @@
   "repository": "https://github.com/animify/Maddy.git",
   "author": "Stefan Mansson <stefan.aotik@gmail.com>",
   "license": "MIT",
+  "keywords": ["maddy"],
   "scripts": {
     "start": "concurrently \"nodemon\" \"next\"",
     "live": "concurrently \"nodemon\" \"next start\"",
