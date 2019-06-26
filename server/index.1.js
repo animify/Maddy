@@ -2,19 +2,26 @@ const cuid = require('cuid');
 const mongoose = require('mongoose');
 const uri = 'mongodb+srv://animify:Password00@reel-yrzwb.mongodb.net/test?retryWrites=true&w=majority';
 const { URLSearchParams } = require('url');
-const express = require('express');
+const restify = require('restify');
+const corsMiddleware = require('restify-cors-middleware');
 const fetch = require('node-fetch');
 const Relation = require('./models/Relation');
 const next = require('next');
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
-const port = parseInt(process.env.PORT, 10) || 3000;
 
 app.prepare().then(() => {
     mongoose.connect(uri, { useNewUrlParser: true });
 
-    const server = express();
+    const server = restify.createServer({
+        name: 'Reel',
+        version: '1.0.0',
+    });
+
+    const cors = corsMiddleware({
+        origins: ['*'],
+    });
 
     async function sendPost(payload, url) {
         console.log('sending post', payload);
@@ -48,12 +55,22 @@ app.prepare().then(() => {
         return `https://reel.animify.now.sh/hooks/v1/${cuid}`;
     };
 
+    server.pre(cors.preflight);
+    server.use(cors.actual);
+    server.use(restify.plugins.acceptParser(server.acceptable));
+    server.use(restify.plugins.queryParser());
+    server.use(
+        restify.plugins.bodyParser({
+            requestBodyOnGet: true,
+        })
+    );
+
     server.get('/hooks', function(req, res, next) {
         res.send('Reel');
         next();
     });
 
-    server.get('/hooks/callback', function(req, res) {
+    server.get('/hooks/callback', function(req, res, next) {
         const query = req.query;
         console.log(query);
 
@@ -72,14 +89,36 @@ app.prepare().then(() => {
                 .save()
                 .then(() => {
                     res.json({ ...data, webhook: getWebhook(id) });
+                    next();
                 })
                 .catch(err => {
                     res.json({ success: false });
+                    next();
                 });
         });
     });
 
-    server.get('/team/:id', async function(req, res) {
+    server.get('/api/get/:id', async function(req, res, next) {
+        const params = req.params;
+
+        if (!params || (params && !params.id)) {
+            res.json({ success: false });
+            return next();
+        }
+
+        const found = await Relation.findOne({ id: params.id });
+
+        res.json({
+            id: found.id,
+            hook: found.hook,
+            channel: found.channel,
+            team: found.team,
+            teamId: found.teamId,
+        });
+        next();
+    });
+
+    server.get('/team/:id', async function(req, res, next) {
         const params = req.params;
 
         if (!params || (params && !params.id)) {
@@ -102,7 +141,7 @@ app.prepare().then(() => {
         }
     });
 
-    server.post('/hooks/v1/:id', async function(req, res) {
+    server.post('/hooks/v1/:id', async function(req, res, next) {
         const params = req.params;
 
         if (!params || (params && !params.id)) {
@@ -143,9 +182,11 @@ app.prepare().then(() => {
 
             sendPost(payload, found.url).then(() => {
                 res.json({ success: true, body: req.body });
+                next();
             });
         } else {
             res.json({ success: false });
+            next();
         }
     });
 
@@ -153,8 +194,7 @@ app.prepare().then(() => {
         return handle(req, res);
     });
 
-    server.listen(port, err => {
-        if (err) throw err;
-        console.log(`> Ready on http://localhost:${port}`);
+    server.listen(3003, function() {
+        console.log('%s listening at %s', server.name, server.url);
     });
 });

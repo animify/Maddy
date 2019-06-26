@@ -8,11 +8,14 @@
   "scripts": {
     "start": "concurrently \"nodemon\" \"next\"",
     "live": "concurrently \"nodemon\" \"next start\"",
+    "server": "nodemon",
     "build": "next build",
+    "deploy": "now --target production",
     "expose": "ngrok http 3003"
   },
   "dependencies": {
     "cuid": "^2.1.6",
+    "express": "^4.17.1",
     "mongoose": "^5.6.1",
     "next": "^8.1.0",
     "ngrok": "^3.2.1",
