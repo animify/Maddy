@@ -65,21 +65,22 @@ server.get('/hooks/callback', function(req, res, next) {
 
     sendCallback(query.code).then(response => {
         const id = cuid();
-        const url = response.incoming_webhook.url;
-        console.log(id, url);
-        const relation = new Relation({ id, url });
+        const hook = response.incoming_webhook.url;
+        const channel = response.incoming_webhook.channel;
+        const team = response.team_name;
+        const teamId = response.team_id;
+        const data = { id, hook, channel, team, teamId };
+        const relation = new Relation(data);
 
         console.log('relation', relation);
 
         relation
             .save()
             .then(() => {
-                console.log('saved relation');
-                res.json({ id, url, hook: `https://reel.animify.now.sh/hooks/v1/${id}` });
+                res.json({ ...data, webhook: `https://reel.animify.now.sh/hooks/v1/${teamId}/${id}` });
                 next();
             })
             .catch(err => {
-                console.log('err', err);
                 res.json({ success: false });
                 next();
             });
