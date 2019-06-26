@@ -33,7 +33,7 @@ async function sendCallback(code) {
     params.append('client_id', '662900450978.673844679700');
     params.append('client_secret', '767c913096222754b705ef7d84b019ea');
     params.append('code', code);
-    params.append('redirect_uri', 'https://reel.animify.now.sh/hooks/callback');
+    params.append('redirect_uri', 'https://maddy.cloud/hooks/callback');
 
     console.log('sending callback', params);
 
@@ -46,8 +46,8 @@ async function sendCallback(code) {
     return res.json();
 }
 
-const getWebhook = cuid => {
-    return `https://reel.animify.now.sh/hooks/v1/${cuid}`;
+const getWebhook = (cuid, teamId) => {
+    return `https://maddy.cloud/hooks/v1/${teamId}/${cuid}`;
 };
 
 server.pre(cors.preflight);
@@ -70,20 +70,20 @@ server.get('/hooks/callback', function(req, res, next) {
     console.log(query);
 
     sendCallback(query.code).then(response => {
+        console.log('response', response);
+
         const id = cuid();
-        const hook = response.incoming_webhook.url;
+        const slackHook = response.incoming_webhook.url;
         const channel = response.incoming_webhook.channel;
         const team = response.team_name;
         const teamId = response.team_id;
-        const data = { id, hook, channel, team, teamId };
+        const data = { id, slackHook, channel, team, teamId };
         const relation = new Relation(data);
-
-        console.log('relation', relation);
 
         relation
             .save()
             .then(() => {
-                res.json({ ...data, webhook: getWebhook(id) });
+                res.json({ ...data, slackHook, webhook: getWebhook(id, teamId) });
                 next();
             })
             .catch(err => {
@@ -93,20 +93,20 @@ server.get('/hooks/callback', function(req, res, next) {
     });
 });
 
-server.get('/api/get/:id', async function(req, res, next) {
+server.get('/api/get/:teamId', async function(req, res, next) {
     const params = req.params;
 
-    if (!params || (params && !params.id)) {
+    if (!params || (params && !params.teamId)) {
         res.json({ success: false });
         return next();
     }
 
     try {
-        const found = await Relation.findOne({ id: params.id });
+        const found = await Relation.findOne({ teamId: params.teamId });
 
         res.json({
             id: found.id,
-            hook: getWebhook(found.id),
+            webhook: getWebhook(found.id, found.teamId),
             channel: found.channel,
             team: found.team,
             teamId: found.teamId,
@@ -117,15 +117,60 @@ server.get('/api/get/:id', async function(req, res, next) {
     next();
 });
 
-server.post('/hooks/v1/:id', async function(req, res, next) {
+server.post('/api/commands', async function(req, res, next) {
+    res.setHeader('content-type', 'application/json');
+
+    try {
+        const { user_id, team_id, text } = req.body;
+        const found = await Relation.findOne({ teamId: team_id });
+
+        switch (text) {
+            case 'webhook':
+                res.json({
+                    text: `¡Hola <@${user_id}>! The webhook for your team is ${getWebhook(found.id, found.teamId)}`,
+                });
+                break;
+            default:
+                res.json({
+                    text: `¡Hola <@${user_id}>! What's up, need help?`,
+                    attachments: [
+                        {
+                            fallback: 'You are unable to visit the website',
+                            color: '#4200FF',
+                            attachment_type: 'default',
+                            actions: [
+                                {
+                                    type: 'button',
+                                    text: 'Visit website',
+                                    url: 'https://maddy.cloud',
+                                },
+                                {
+                                    type: 'button',
+                                    text: 'View team details',
+                                    url: `https://maddy.cloud/team/${team_id}`,
+                                },
+                            ],
+                        },
+                    ],
+                });
+        }
+    } catch (err) {
+        res.json({
+            response_type: 'ephemeral',
+            text: "Sorry, that didn't work. Please try again.",
+        });
+    }
+    next();
+});
+
+server.post('/hooks/v1/:teamId/:id', async function(req, res, next) {
+    res.setHeader('content-type', 'application/json');
     const params = req.params;
 
-    if (!params || (params && !params.id)) {
-        res.json({ success: false });
+    if (!params || (params && !params.id && !params.teamId)) {
+        res.json({ success: false, message: 'Webhook could not be found.' });
         return next();
     }
-
-    res.setHeader('content-type', 'application/json');
 
     console.log('sending post request');
 
@@ -141,7 +186,7 @@ server.post('/hooks/v1/:id', async function(req, res, next) {
             attachments: [
                 {
                     fallback: 'You are unable to visit the release',
-                    color: '#000',
+                    color: '#4200FF',
                     attachment_type: 'default',
                     actions: [
                         {
@@ -154,14 +199,13 @@ server.post('/hooks/v1/:id', async function(req, res, next) {
             ],
         });
 
-        const found = await Relation.findOne({ id: params.id });
+        const found = await Relation.findOne({ id: params.id, teamId: params.teamId });
 
-        sendPost(payload, found.hook).then(() => {
+        sendPost(payload, found.slackHook).then(() => {
             res.json({ success: true, body: req.body });
             next();
         });
     } else {
-        res.json({ success: false });
         next();
     }
 });

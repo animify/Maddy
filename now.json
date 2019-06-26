@@ -2,6 +2,7 @@
     "version": 2, 
     "public": true,
     "name": "Reel",
+    "alias": "maddy.cloud",
     "builds": [
         {
             "src": "server/index.js",
