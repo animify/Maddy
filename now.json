@@ -17,6 +17,12 @@
             "src": "/hooks/(.*)",
             "dest": "/server/index.js",
             "methods": ["GET", "POST"]
-        }
+        },
+        {
+            "src": "/api/(.*)",
+            "dest": "/server/index.js",
+            "methods": ["GET", "POST"]
+        },
+        { "src": "/team/(?<id>[^/]+)$", "dest": "/team?id=$id" }
     ]
   }

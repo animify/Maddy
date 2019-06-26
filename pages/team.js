@@ -1,20 +1,28 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 
-export default class extends Component {
-    static getInitialProps({ query: props }) {
-        return props;
-    }
+function Team({ teamId }) {
+    const [props, setProps] = useState({ id: null, hook: null, channel: null, team: null });
+    const { id, hook, channel, team } = props;
 
-    render() {
-        const { id, hook, channel, team, teamId } = this.props;
-        return (
-            <div>
-                <h4>Cuid: {id}</h4>
-                <h4>Webhook: {hook}</h4>
-                <h4>Posting to: {channel}</h4>
-                <h4>Team: {team}</h4>
-                <h4>Team ID: {teamId}</h4>
-            </div>
-        );
-    }
+    useEffect(() => {
+        fetch(`/api/get/${teamId}`)
+            .then(response => response.json())
+            .then(setProps);
+    }, []);
+
+    return (
+        <div>
+            <h4>Cuid: {id}</h4>
+            <h4>Webhook: {hook}</h4>
+            <h4>Posting to: {channel}</h4>
+            <h4>Team: {team}</h4>
+            <h4>Team ID: {teamId}</h4>
+        </div>
+    );
 }
+
+Team.getInitialProps = async ({ query }) => {
+    return { teamId: query.id };
+};
+
+export default Team;
