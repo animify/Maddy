@@ -1,8 +1,8 @@
 {
-  "name": "reel",
+  "name": "maddy",
   "version": "1.0.0",
   "main": "server/index.js",
-  "repository": "https://github.com/animify/Reel.git",
+  "repository": "https://github.com/animify/Maddy.git",
   "author": "Stefan Mansson <stefan.aotik@gmail.com>",
   "license": "MIT",
   "scripts": {

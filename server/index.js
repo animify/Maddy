@@ -10,7 +10,7 @@ const Relation = require('./models/Relation');
 mongoose.connect(uri, { useNewUrlParser: true });
 
 const server = restify.createServer({
-    name: 'Reel',
+    name: 'Maddy',
     version: '1.0.0',
 });
 
@@ -59,11 +59,6 @@ server.use(
         requestBodyOnGet: true,
     })
 );
-
-server.get('/hooks', function(req, res, next) {
-    res.send('Reel');
-    next();
-});
 
 server.get('/hooks/callback', function(req, res, next) {
     const query = req.query;
