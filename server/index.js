@@ -198,16 +198,14 @@ server.post("/hooks/v1/:teamId/:id", async function(req, res, next) {
 
   console.log("sending post request");
 
-  if (req.body.action === "created" && req.body.release) {
+  if ("ref_type" in req.body && req.body.ref_type === "tag") {
     const releaseMessage = `:package: New release *${
-      req.body.release.name
+      req.body.ref
     }* created in repository *${req.body.repository.name}* (<${
       req.body.repository.html_url
     }|@${req.body.repository.full_name}>).\n:label: Tagged *${
-      req.body.release.tag_name
-    }* by <${req.body.release.author.html_url}|*@${
-      req.body.release.author.login
-    }*>.`;
+      req.body.ref
+    }* by <${req.body.sender.html_url}|*@${req.body.sender.login}*>.`;
 
     const payload = JSON.stringify({
       text: releaseMessage,
@@ -219,8 +217,10 @@ server.post("/hooks/v1/:teamId/:id", async function(req, res, next) {
           actions: [
             {
               type: "button",
-              text: `See release ${req.body.release.tag_name}`,
-              url: req.body.release.html_url
+              text: `See release ${req.body.ref}`,
+              url: `${req.body.repository.html_url}/releases/tag/${
+                req.body.ref
+              }`
             }
           ]
         }
