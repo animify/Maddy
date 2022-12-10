@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "cuid": "^2.1.6",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "mongoose": "^5.6.1",
     "next": "^8.1.0",
     "ngrok": "^3.2.1",
